@@ -3,6 +3,7 @@
 #include <vector>
 #include "utils.h"
 #include "graph.h"
+#include "tsp_random.h"
 
 using namespace std;
 
@@ -23,5 +24,10 @@ int main() {
         cout << endl;
     }
     
+    cout<<endl;
+
+    Tsp_random tsp = Tsp_random(g);
+    tsp.hamil_cycle();
+
     return 0;
 }
