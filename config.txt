@@ -1,0 +1,7 @@
+debug: 1
+max_iter: 100000
+1
+s12.txt 0
+
+a6_1.txt 150
+s10.txt 212

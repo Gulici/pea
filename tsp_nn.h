@@ -1,12 +1,13 @@
-#ifndef TSP_R
-#define TSP_R
+#ifndef TSP_NN
+#define TSP_NN
 
 #include "graph.h"
 #include <vector>
+#include <unordered_map>
 #include <list>
 #include "utils.h"
 
-class Tsp_random {
+class Tsp_nn {
     Graph *_g;
     int gSize;
     int *visited;
@@ -17,35 +18,36 @@ class Tsp_random {
     std::list<int> best_cycle;
 
     int maxIter = 10000;
-    bool debug;
+    bool debug = true;
     int cycle_res_sum;
 
     public:
-    Tsp_random(Graph& g, bool DEBUG, int MAX_ITER);
+    Tsp_nn(Graph& g, bool DEBUG, int MAX_ITER);
     void solve();
-    void hamil_cycle();
+    void hamil_cycle(int si);
     void hamil_cycle_step(int vi);
-    int random_neigh(int vi);
+    int nearest_neigh(int vi);
 };
 
-Tsp_random::Tsp_random(Graph& g, bool DEBUG, int MAX_ITER) {
+Tsp_nn::Tsp_nn(Graph& g, bool DEBUG, int MAX_ITER) {
     debug = DEBUG;
     maxIter = MAX_ITER;
     this->_g = &g;
     gSize = g.getSize();
 }
 
-inline void Tsp_random::solve() {
+inline void Tsp_nn::solve() {
     int bestRes = INT_MAX;
     int bestKnow = _g->getBestKnow();
     int iterCount = 0;
 
-    while(1) {
+    for(int i = 0; i < gSize; i ++) {
+        si = i;
         if(iterCount >= maxIter || bestRes == bestKnow) {
             break;
         }
 
-        hamil_cycle();
+        hamil_cycle(si);
         
         if(cycle_res_sum < bestRes) {
             bestRes = cycle_res_sum;
@@ -55,18 +57,19 @@ inline void Tsp_random::solve() {
         iterCount++;
 
         //print debug
-        if(debug && (iterCount % 10000 == 0)) {
-            std::cout << iterCount << "/" << maxIter << " best yet: " << bestRes << endl;
+        if(debug && (iterCount % 1 == 0)) {
+            std::cout << iterCount << "/" << gSize << " best yet: " << bestRes << endl;
         }
     }
 
     //print result
-    cout << "Random\nNajlepszy znaleziony cykl:";
+    cout << "Nearest-neigh\nNajlepszy znaleziony cykl:";
     for(int v : res_cycle) cout << v << " ";
     cout << " Koszt: " << bestRes << endl;
+
 }
 
-inline void Tsp_random::hamil_cycle()
+inline void Tsp_nn::hamil_cycle(int si)
 {
     cycle_res_sum = INT_MAX;
     res_cycle.clear();
@@ -76,8 +79,7 @@ inline void Tsp_random::hamil_cycle()
     for(int i = 0; i < gSize; i++) {
         visited[i] = 0;
     }
-    //random start point
-    si = random(0,gSize-1);
+
     visited[si] = 1;
     visited_count++;
     hamil_cycle_step(si);
@@ -90,12 +92,12 @@ inline void Tsp_random::hamil_cycle()
     else std::cout << "nie znaleziono cyklu";
 }
 
-inline void Tsp_random::hamil_cycle_step(int vi)
+inline void Tsp_nn::hamil_cycle_step(int vi)
 {
     //czy ma  nieodwiedzonych sasiadow?
     int ni = si;
     while(!found) {
-        ni = random_neigh(vi);
+        ni = nearest_neigh(vi);
         if(ni != -1) {
             visited[ni] = 1;
             visited_count++;
@@ -121,31 +123,49 @@ inline void Tsp_random::hamil_cycle_step(int vi)
         cycle_res_sum += _g->matrix[vi][ni];
     }
 
+    // TODO warunek wyjscia w razie nie istnienia cyklu hamiltona
     visited_count--;
     visited[vi] = 0;
 }
 
-inline int Tsp_random::random_neigh(int vi)
+
+inline int Tsp_nn::nearest_neigh(int vi)
 {   
     const std::vector<vector<int>> neightmatrix = _g->matrix;
-    std::vector<int> v_neighs;
+    std::unordered_map<int,int> v_neighs_map;
+    std::list<int> nearest;
+
     std::vector<int> v_row = neightmatrix.at(vi);
 
     //vi neight from matrix
     for(int i = 0; i < gSize; i++) {
-        int n = v_row.at(i);
-        if(n != 0 || n != -1) v_neighs.push_back(i);
+        int w = v_row.at(i);
+        if(w != 0 || w != -1){
+            v_neighs_map.insert({i , w});
+        } 
     }
 
     int nsize;
-    while((nsize = v_neighs.size()) > 0) {
-        int randi = random(0,nsize-1);
-        int ni = v_neighs.at(randi);
-        if(visited[ni] == 0) {
-            return ni;
+
+
+    while((nsize = v_neighs_map.size()) > 0) {
+
+        int nearestWeight = INT_MAX;
+        int nearestN;
+
+        //find lowest weight
+        for(auto& it : v_neighs_map) {
+            if(it.second < nearestWeight) {
+                nearestWeight = it.second;
+                nearestN = it.first;
+            }
+        }
+
+        if(visited[nearestN] == 0) {
+            return nearestN;
         }
         else {
-            v_neighs.erase(v_neighs.begin()+randi);
+            v_neighs_map.erase(nearestN);
         }
     }
 

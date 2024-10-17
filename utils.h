@@ -9,7 +9,7 @@
 
 using namespace std;
 
-vector<vector<int>> readFromTxt(const string &filename) {
+vector<vector<int>> readFromTxtList(const string &filename) {
     vector<vector<int>> vec;
     ifstream file(filename);
 
@@ -31,6 +31,37 @@ vector<vector<int>> readFromTxt(const string &filename) {
             row.push_back(v1);
             row.push_back(v2);
             row.push_back(w);
+            vec.push_back(row);
+        }
+
+        file.close();
+    }
+    else {
+        std::cerr << "Nie udało się otworzyć pliku do odczytu\n";
+    } 
+    
+    return vec;
+}
+
+vector<vector<int>> readFromTxtMatrix(const string &filename) {
+    vector<vector<int>> vec;
+    ifstream file(filename);
+
+    if(file.is_open()) {
+        int size;
+        file >> size;
+        vector<int> row;
+
+        row.push_back(size);
+        vec.push_back(row);
+
+        for(int i = 0; i < size; i ++) {
+            vector<int> row;
+            for(int j = 0; j < size; j++) {
+                int num;
+                file >> num;
+                row.push_back(num);
+            }
             vec.push_back(row);
         }
 

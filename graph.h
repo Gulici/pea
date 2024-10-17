@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <assert.h>
+#include "utils.h"
 
 struct Edge {
     int _v1,_v2,_w;
@@ -15,25 +16,34 @@ struct Edge {
 
 struct Node {
     int index;
-    int parentIndex;
+    int parentIndex = -1;
+    int weight = 0;
+    bool visited = false;
     std::vector<int> childIndexes;
     std::vector<Edge> edges;
 };
 
 class Graph {
+    std::string name;
     int _size;
     std::vector<Node> nodes;
     std::vector<Edge> edges;
     bool isDirected = false;
 
+    int bestKnownTSP = 0;
+
     public:
+        std::vector<std::vector<int>> matrix;
         Graph(std::vector<std::vector<int>> data);
+        Graph(std::string filename, int bestKnowTsp);
         ~Graph();
-        void addEdge(int v1, int v2, int weight);
+        void addEdge(int v1, int v2, int weight, bool list);
         std::vector<std::vector<int>> neighMatrix();
         int getSize();
+        int getBestKnow();
         std::vector<Edge>& getEdges();
         std::vector<Node>& getNodes();
+        std::vector<std::vector<int>> getMatrix();
 };
 
 Graph::Graph(std::vector<std::vector<int>> data) {
@@ -52,14 +62,45 @@ Graph::Graph(std::vector<std::vector<int>> data) {
         int v1 = row[0];
         int v2 = row[1];
         int weight = row[2]; 
-        addEdge(v1,v2,weight);
+        addEdge(v1,v2,weight, true);
+    }
+}
+
+inline Graph::Graph(std::string filename, int bestKnow)
+{   
+    this->bestKnownTSP = bestKnow;
+    //load data
+    std::vector<std::vector<int>> data = readFromTxtMatrix(filename);
+    matrix = data;
+    matrix.erase(matrix.begin());
+
+    std::vector<int> row = data[0];
+    _size = row[0];
+
+    for(int i = 0; i < _size; i++) {
+        Node n;
+        n.index = i;
+        nodes.push_back(n);
+    }
+
+    for(int i = 0; i < _size; i++) {
+        row = data[i + 1];
+        int v1 = i;
+        for(int j = 0; j < _size; j++) {
+            int weight = row[j];
+
+            if (weight > 0) {
+                int v2 = j;
+                addEdge(v1,v2,weight, false);
+            }
+        }
     }
 }
 
 inline Graph::~Graph() {
 }
 
-void Graph::addEdge(int v1,int v2,int weight) {
+void Graph::addEdge(int v1,int v2,int weight, bool list) {
     assert (v1 >= 0 && v1 < _size);
     assert (v2 >= 0 && v2 < _size);
     
@@ -70,7 +111,7 @@ void Graph::addEdge(int v1,int v2,int weight) {
     edges.push_back(e1);
     n1.edges.push_back(e1);
 
-    if(!isDirected) {
+    if(!isDirected && list) {
         Edge e2 = Edge(v2,v1,weight);
         edges.push_back(e2);
         n2.edges.push_back(e2);
@@ -102,6 +143,11 @@ inline int Graph::getSize()
     return _size;
 }
 
+inline int Graph::getBestKnow()
+{
+    return bestKnownTSP;
+}
+
 inline std::vector<Edge> &Graph::getEdges()
 {
     return edges;
@@ -111,6 +157,11 @@ inline std::vector<Edge> &Graph::getEdges()
 inline std::vector<Node> &Graph::getNodes()
 {
     return nodes;
+}
+
+inline std::vector<std::vector<int>> Graph::getMatrix()
+{
+    return matrix;
 }
 
 #endif
