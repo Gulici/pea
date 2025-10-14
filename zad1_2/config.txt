@@ -1,0 +1,48 @@
+debug: 1
+max_time: 15
+5
+s6p.txt  179 
+s7p.txt  150
+s8p.txt  203
+s9p.txt  236
+s10p.txt 159
+s11p.txt 168
+s12p.txt 232
+s13p.txt 139
+s14p.txt 271
+s15p.txt 192
+
+a6_100.txt  145
+a7_100.txt  142
+a8_100.txt  110
+a9_100.txt  129
+a10_100.txt 138
+a11_100.txt 200
+a12_100.txt 131
+a13_100.txt 148
+a14_100.txt 105
+a15_100.txt 179
+
+s6.txt  134
+s7.txt  206
+s8.txt  262
+s9.txt  278
+s10.txt 297
+s11.txt 215
+s12.txt 444
+s13.txt 269
+s14.txt 275
+s15.txt 275
+
+a6_100.txt  145
+a7_100.txt  142
+a8_100.txt  110
+a9_100.txt  129
+a10_100.txt 138
+a11_100.txt 200
+a12_100.txt 131
+a13_100.txt 148
+a14_100.txt 105
+a15_100.txt 179
+
+
