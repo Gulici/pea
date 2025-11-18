@@ -1,0 +1,17 @@
+{
+    "debug": true,
+    "geo": true,
+    "max_time": 15,
+    "alfa": 0.9995,
+    "tmulti": 100,
+    "lmulti": 50,
+    "lconst": true,
+    "tmin": 0.01,
+
+    "graphs": [
+        {"file": "bayg29.json"},
+        {"file": "berlin52.json"},
+        {"file": "gr120.json"},
+        {"file": "gr431.json"}
+    ]
+}
