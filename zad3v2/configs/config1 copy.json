@@ -2,22 +2,21 @@
     "method": "SA",
 
     "debug": true,
-    "geo": false,
+    "geo": true,
     "max_time": 15,
 
-    "alfa": 0.975,
-    "tmax": 5000,
-    "lmulti": 200,
+    "alfa": 0.9995,
     "tmulti": 100,
-    "tconst": false,
-    "tmin": 0.1,
+    "lmulti": 50,
+    "lconst": true,
+    "tmin": 0.01,
 
     "aco_iterations": 2000,
     "aco_alpha": 1.0,
     "aco_beta": 3.0,
     "aco_evap": 0.5,
     "aco_initial_pheromone": 0.001,
-    "aco_use_cas": false,
+    "aco_use_cas": true,
 
     "graphs": [
         {"file": "bayg29.json"},

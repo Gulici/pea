@@ -9,6 +9,9 @@
 #include <chrono>
 #include "utils.h"
 #include <math.h>
+#include <fstream>
+#include <string>
+#include <iomanip>
 
 class Tsp_sa 
 {
@@ -19,7 +22,6 @@ class Tsp_sa
     bool lconst;
 
     double Tmax, Tmin;
-    double tmulti;              // wspolczynnik Tmax
     double alfa;                // wspolczynnik chlodzenia geometrycznego
     int L = 100;                // liczba transformacji dla Tk
     std::vector<int> solution;  // znalezione rozwiazanie
@@ -29,9 +31,12 @@ class Tsp_sa
     std::chrono::minutes maxtime = std::chrono::minutes(1);
     bool overrun = false;
 
+    int optimum = -1;
+    std::string instanceName;
+
     public:
     int result = 0;
-    Tsp_sa(Graph& g, bool debug, int max_time, double alfa, double tmulti, int lmulti, bool lconst, bool geo, double tmin);
+    Tsp_sa(Graph& g, bool debug, int max_time, double alfa, double tmax, int tmulti, int lmulti, bool tconst, bool geo, double tmin, string instanceName);
     int solve();
     std::vector<int> startSolution();
     std::vector<int> neighSolution(const std::vector<int>& path);
@@ -40,17 +45,23 @@ class Tsp_sa
     bool isLegalRoute(const std::vector<int>& p);
 };
 
-Tsp_sa::Tsp_sa(Graph& g, bool debug, int max_time, double alfa, double tmulti, int lmulti, bool lconst, bool geo, double tmin) 
+Tsp_sa::Tsp_sa(Graph& g, bool debug, int max_time, double alfa, double tmax, int tmulti, int lmulti, bool tconst, bool geo, double tmin, string instanceName) 
 {
     gSize = g.getSize();
     neightmatrix = g.neighMatrix();
     DEBUG = debug;
     this->lconst = lconst;
     maxtime = std::chrono::minutes(max_time);
+    this->optimum = g.getBestKnow();
+    this->geo = geo;
 
-    //wyznaczenie temperatury maksymalnej
-    // Tmax = g.avgWeight * tmulti;
-    Tmax = gSize * tmulti;
+    this->instanceName = instanceName;
+
+    // wyznaczenie temperatury maksymalnej
+    Tmax = tmax;
+    if(!tconst) {
+        Tmax = gSize * tmulti;
+    }
     // wyznaczenie temperatury minimalnej
     Tmin = tmin;
     // wyznaczenie początkowej ilości powtórzeń
@@ -60,13 +71,20 @@ Tsp_sa::Tsp_sa(Graph& g, bool debug, int max_time, double alfa, double tmulti, i
     this->alfa = alfa;
 }
 
+// pomocnicza funkcja do sformatowanego zapisu błędu (np. 0.0123 -> 1.23%)
+static inline std::string format_percent(double v) {
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(4) << (v * 100.0) << "%";
+    return ss.str();
+}
+
 int Tsp_sa::solve() 
 {   
     // wyznaczenie poczatkowego rozwiazania
     solution = startSolution();
     int solDist = calDistance(solution);
     int Lk = L;
-    int Lmin = L * 0.1;
+    int Lmin = static_cast<int>(L * 0.1);
     double T = Tmax;
 
     start = std::chrono::system_clock::now();
@@ -77,7 +95,7 @@ int Tsp_sa::solve()
         for(int i = 0; i < Lk; i++) {
             std::vector<int> n = neighSolution(solution);
             int nDist = calDistance(n);
-            // przyjmujemy mniejsze rozwiazanie jesli jego koszt jest mniejszy
+            // przyjmujemy mniejsze rozwiazanie
             if(nDist <= solDist) {
                 solution = n;
                 solDist = nDist;
@@ -106,25 +124,63 @@ int Tsp_sa::solve()
         // obnizenie temperatury
         if (geo) T *= alfa;
         else T *= pow(alfa, k);
-        // obnizenie liczby iteracji
-        if(!lconst){
-            if(Lk > Lmin) Lk *= alfa;
-            if(Lk < Lmin) Lk = Lmin;
-        }
 
-        k++; 
+        k++;
     }
 
     end = std::chrono::system_clock::now();
     diff = end - start;
     auto tms = std::chrono::duration_cast<std::chrono::milliseconds>(diff);
+    long long elapsed_ms = tms.count();
 
     std::cout << "SA\nNajlepszy znaleziony cykl:";
     for(int v : solution) std::cout << v << " ";
-    std::cout << " Koszt: " << solDist << endl;
+    std::cout << " Koszt: " << solDist << std::endl;
     result = solDist;
 
-    return tms.count();
+    // ---------------------------
+    // obliczenie błędu względnego i zapis do CSV
+    // ---------------------------
+    double rel_err = 0.0;
+    if (optimum > 0 && solDist < std::numeric_limits<int>::max()/4) {
+        rel_err = (static_cast<double>(solDist) - static_cast<double>(optimum)) / static_cast<double>(optimum);
+    }
+
+    // zapisz do pliku CSV (doklej)
+    std::string outCsv = "wyniki_sa.csv";
+    std::ofstream f(outCsv, std::ios::app);
+    if (f) {
+        // kolumny: instance,n,method,best_cost,rel_err,alpha,tmulti,lmulti,lconst,tmin,time_ms
+        f << (instanceName.empty() ? "unknown" : instanceName) << ","
+          << gSize << ","
+          << optimum << ","
+          << (geo ? "Geo" : "Geo2") << ","
+          << solDist << ","
+          << rel_err << ","
+          << alfa << ","
+          << L << ","
+          << (lconst ? "true" : "false") << ","
+          << Tmin << ","
+          << Tmax << ","
+          << elapsed_ms
+          << "\n";
+    }
+
+    std::cout << "=== WYNIK SA ===\n"
+            << "Instancja:        " << (instanceName.empty() ? "unknown" : instanceName) << "\n"
+            << "Liczba miast:     " << gSize << "\n"
+            << "Schemat chlodz.:  " << (geo ? "Geo" : "Geo2") << "\n"
+            << "Najlepszy koszt:  " << solDist << "\n"
+            << "Optimum:          " << (optimum >= 0 ? std::to_string(optimum) : std::string("brak")) << "\n"
+            << "Blad wzgledny:    " << std::fixed << std::setprecision(6) << rel_err << "  (" << format_percent(rel_err) << ")\n"
+            << "Alfa (chlodzenie): " << alfa << "\n"
+            << "Tmax (start):     " << Tmax << "\n"
+            << "Tmin (stop):      " << Tmin << "\n"
+            << "L:                " << L << "\n"
+            << "Czas [ms]:        " << elapsed_ms << "\n"
+            << "=================\n\n";
+
+    return static_cast<int>(elapsed_ms);
 }
 
 // rozwiazanie dla grafow pelnych
